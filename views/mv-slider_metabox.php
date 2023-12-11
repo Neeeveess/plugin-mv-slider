@@ -8,7 +8,7 @@
     <input type="hidden" name="mv_slider_nonce" value="<?= wp_create_nonce('mv_slider_nonce') ?>">
     <tr>
         <th>
-            <label for="mv_slider_link_text">Link Text</label>
+            <label for="mv_slider_link_text"><?php esc_html__('Link Text' , 'mv-slider'); ?></label>
         </th>
         <td>
             <input 
@@ -23,7 +23,7 @@
     </tr>
     <tr>
         <th>
-            <label for="mv_slider_link_url">Link URL</label>
+            <label for="mv_slider_link_url"><?php esc_html__('Link Url' , 'mv-slider'); ?></label>
         </th>
         <td>
             <input 
