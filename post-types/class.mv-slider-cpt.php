@@ -7,9 +7,12 @@ if (!class_exists('MV_Slider_Post_Type')){
       add_action('init', array($this, 'create_post_type'));
       add_action('add_meta_boxes',array($this,'add_meta_boxes'));
       add_action('save_post', array($this, 'save_post'), 10, 2);
+      add_action('save_post', array($this, 'save_post_quick_edit'), 10);
       add_filter('manage_mv-slider_posts_columns', array($this, 'mv_slider_cpt_columns'));
       add_action('manage_mv-slider_posts_custom_column', array($this, 'mv_slider_custom_columns'), 10,2);
       add_filter('manage_edit-mv-slider_sortable_columns', array($this, 'mv_slider_sortable_columns'));
+      add_action('quick_edit_custom_box', array($this,'on_quick_edit_custom_box'), 10, 2);
+      add_action('admin_footer', array($this, 'script_populate'));
     }
 
     //CRIANDO TIPO DE POST
@@ -58,6 +61,61 @@ if (!class_exists('MV_Slider_Post_Type')){
       }
     }
 
+    //SCRIPT QUE PEGA OS VALORES DO BANCO DE DADOS DO METABOX
+    function script_populate(){
+      ?>
+      <script>
+        jQuery( function( $ ){
+
+        const wp_inline_edit_function = inlineEditPost.edit;
+
+        // we overwrite the it with our own
+        inlineEditPost.edit = function( post_id ) {
+
+          // let's merge arguments of the original function
+          wp_inline_edit_function.apply( this, arguments );
+
+          // get the post ID from the argument
+          if ( typeof( post_id ) == 'object' ) { // if it is object, get the ID number
+            post_id = parseInt( this.getId( post_id ) );
+          }
+
+          // add rows to variables
+          const edit_row = $( '#edit-' + post_id )
+          const post_row = $( '#post-' + post_id )
+
+          const productPrice = $( '.column-mv_slider_link_url', post_row ).text() 
+
+          // populate the inputs with column data
+          $( ':input[name="mv_slider_link_url"]', edit_row ).val( productPrice );          
+          
+        }
+        });
+      </script>
+      <?php
+    }
+
+    // ADICIONANDO NA EDIÇAO RAPIDA
+    function on_quick_edit_custom_box($column_name, $post_type)
+    {
+        if ('mv_slider_link_url' == $column_name) { 
+          ?>        
+          <fieldset class="inline-edit-col-left">
+            <div class="inline-edit-col">
+              <label>
+                <span class="title">Link Url</span>
+                <input 
+                    type="url" 
+                    name="mv_slider_link_url" 
+                    id="mv_slider_link_url" 
+                    class="regular-text link-url"                                
+                >
+              </label>
+            </div>
+          </fieldset>
+        <?php }
+    }
+
     //FILTRO NA COLUNA LINK_TEXT
     public function mv_slider_sortable_columns($columns){
       $columns['mv_slider_link_text'] = 'mv_slider_link_text';
@@ -80,6 +138,18 @@ if (!class_exists('MV_Slider_Post_Type')){
     //PEGANDO A VIEW
     public function add_inner_meta_boxes($post){
       require_once(MV_SLIDER_PATH.'views/mv-slider_metabox.php');
+    }
+
+    //SALVANDO POST QUICK EDIT
+    public function save_post_quick_edit($post_id ){
+          // check inlint edit nonce
+      if ( ! wp_verify_nonce( $_POST[ '_inline_edit' ], 'inlineeditnonce' ) ) {
+        return;
+      }
+
+      $url = ! empty( $_POST[ 'mv_slider_link_url' ] ) ? esc_html( $_POST[ 'mv_slider_link_url' ] ) : '';
+      update_post_meta( $post_id, 'mv_slider_link_url', $url );
+
     }
 
     //SALVANDO POST, COM SEGURANÇA E VERIFICAÇÕES
